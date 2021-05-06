@@ -83,7 +83,7 @@ class AudioDataset(torch.utils.data.Dataset):
         Args:
             index: index to recover a single sample
         Returns:
-            x,y: features extracted and label
+            x, y: features extracted and label
         """
         # Select sample
         ID = self.list_IDs[index]
