@@ -112,9 +112,7 @@ class Transpose1dLayer(nn.Module):
 @SerializableModule.register_model('generator')
 class Generator(SerializableModule):
 
-    def __init__(self, model_size=64, num_channels=1,
-                 latent_dim=100, post_proc_filt_len=512,
-                 verbose=False, upsample=True):
+    def __init__(self, model_size=64, num_channels=1, latent_dim=100, post_proc_filt_len=512, verbose=False, upsample=True):
         super().__init__()
 
         self.model_size = model_size  # d
@@ -219,8 +217,7 @@ class PhaseRemove(nn.Module):
 
 @SerializableModule.register_model('discriminator')
 class Discriminator(SerializableModule):
-    def __init__(self, model_size=64, num_channels=1, shift_factor=2,
-                 alpha=0.2, verbose=False):
+    def __init__(self, model_size=64, num_channels=1, shift_factor=2, alpha=0.2, verbose=False):
         super().__init__()
 
         self.model_size = model_size  # d
