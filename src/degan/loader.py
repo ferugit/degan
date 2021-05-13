@@ -41,7 +41,7 @@ class AudioDataset(torch.utils.data.Dataset):
     """
     Torch dataset for lazy load.
     """
-    def __init__(self, list_IDs, dataframe, window_size=24000, fs=16000, augments=None):
+    def __init__(self, list_IDs, dataframe, window_size=16317, fs=16000, augments=None):
         
         self.window_size = window_size
         self.fs = fs # Hz

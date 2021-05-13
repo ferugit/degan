@@ -18,8 +18,10 @@ def main(args):
     This function walks over the data paths to create a TSV that constains all the audio metadata.
     """
 
+    torchaudio.set_audio_backend("sox_io")
+
     # Data path
-    wavs_path = os.path.join(args.src, 'impulse_responses')
+    wavs_path = os.path.join(args.src, 'impulse_responses_2')
 
     # Create dataframe list
     dataframe_list = []
@@ -39,6 +41,8 @@ def main(args):
             except:
                 print('Non valid file:' + sample_path)
                 continue
+
+            # TODO: get impulse response type
 
             # Write row on dataframe
             dataframe_list.append([ sample_id, sample_path, audio_length, 'im'])

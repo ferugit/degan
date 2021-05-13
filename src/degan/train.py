@@ -18,11 +18,14 @@ def right_predictions(out, label):
     return counter
 
 
-def train(model, train_loader, validation_loader, optimizer, criterion, device, 
+def train(models, train_loader, validation_loader, optimizer, criterion, device, 
     epochs, batch_size, model_path, patience=10, net_class='rnn'):
     """
     Trainer for wuw detection models
     """
+
+    generator = models[0]
+    discriminator = models[1]
 
     # Metrics
     train_losses = []
@@ -160,7 +163,7 @@ def train(model, train_loader, validation_loader, optimizer, criterion, device,
     metrics['validation_loss'] = validation_losses
     metrics['validation_accuracy'] = validation_accuracies
 
-    return model, metrics
+    return metrics
 
 
 def plot_train_metrics(metrics):
@@ -205,7 +208,7 @@ def save_train_metrics_plot(metrics, figure_path):
     plt.savefig(figure_path)
 
 
-def test_model(model, test_loader, criterion, device, batch_size,
+def test_model(models, test_loader, criterion, device, batch_size,
     net_class='rnn'):
     
     # Metrics initialization

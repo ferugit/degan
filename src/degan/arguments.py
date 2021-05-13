@@ -15,19 +15,14 @@ def parse_arguments():
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR', help='learning rate')
     parser.add_argument('--epochs', type=int, default=100, metavar='N', help='number of epochs to train')
     parser.add_argument('--patience', type=int, default=10, help='number of epochs of no loss improvement before stop training')
-    parser.add_argument('--optimizer', default='adam', help='optimization method: sgd | adam | rmsprop')
     parser.add_argument('--weight_decay', type=float, default=0.0, metavar='WD', help='weight decay for the optimizer')
-    parser.add_argument('--momentum', type=float, default=0.9, metavar='M', help='SGD momentum, for SGD only')
-
-    # Data Augmentation
-    parser.add_argument('--use_white_noise', dest='white_noise', action='store_true', help='do not combine all samples with white noise')
 
     # Store results
     parser.add_argument('--checkpoint', default='models/checkpoints', metavar='CHECKPOINT', help='checkpoints directory')
     parser.add_argument('--experiment_description', default='frist experiment', help='experiment name of the folder where best models are saved at')
 
     # Audio
-    parser.add_argument('--sampling_rate', type=float, default=16000, metavar='SR', help='sampling rate of the audio signals')
-    parser.add_argument('--time_window', type=float, default=1.5, metavar='TW', help='time window covered by every data sample')
+    parser.add_argument('--sampling_rate', type=float, default=44100, metavar='SR', help='sampling rate of the audio signals')
+    parser.add_argument('--time_window', type=float, default=0.37, metavar='TW', help='time window covered by every data sample')
 
     return parser.parse_args()

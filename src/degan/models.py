@@ -21,11 +21,11 @@ class SerializableModule(nn.Module):
         return decorator
 
     @classmethod
-    def create(cls, arc, num_classes):
+    def create(cls, arc):
         if arc not in cls.subclasses:
             raise ValueError('Bad model name {}'.format(arc))
 
-        return cls.subclasses[arc](num_classes)
+        return cls.subclasses[arc]()
 
     def save(self, filename):
         torch.save(self.state_dict(), filename +'.pt')
@@ -39,57 +39,6 @@ class SerializableModule(nn.Module):
 
     def load(self, filename):
         self.load_state_dict(torch.load(filename, map_location=lambda storage, loc: storage))
-
-
-
-@SerializableModule.register_model('lenet')
-class LeNet(SerializableModule):
-
-    def __init__(self, num_classes):
-        super().__init__()
-
-        # Mel-Spectrogram
-        self.mel_spectrogram = torchaudio.transforms.MelSpectrogram(
-            sample_rate=16000,
-            n_fft=512,
-            win_length=320,
-            hop_length=160,
-            n_mels=40
-        )
-
-        self.features = nn.Sequential(
-            nn.InstanceNorm2d(1),
-            nn.Conv2d(1, 16, kernel_size=5),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, kernel_size=5),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Dropout(0.2)
-        )
-
-        f_bins = 40
-        t_bins = 151
-        f_r = self.__get_size(f_bins)
-        t_r = self.__get_size(t_bins)
-    
-        self.classifier = nn.Sequential(     
-            nn.Linear(32 * f_r * t_r, 100),
-            nn.Dropout(0.5),
-            nn.ReLU(),  
-            nn.Linear(100, num_classes)
-        )
-
-    def forward(self, x):
-        x = x.unsqueeze(1) # [b, ch, t]
-        x = self.mel_spectrogram(x) # [b, ch, f_b, t_b]
-        x = self.features(x) 
-        x = x.view(x.shape[0], -1) # [b, ch*f_b*t_b]
-        x = self.classifier(x) # [b, 10]
-        return x
-
-    def __get_size(self, in_dim):
-        return int(math.floor((((in_dim-4)/2)-4)/2))
 
 
 class Transpose1dLayer(nn.Module):
@@ -112,12 +61,13 @@ class Transpose1dLayer(nn.Module):
 @SerializableModule.register_model('generator')
 class Generator(SerializableModule):
 
-    def __init__(self, model_size=64, num_channels=1, latent_dim=100, post_proc_filt_len=512, verbose=False, upsample=True):
+    def __init__(self, model_size=64, post_proc_filt_len=512, verbose=True, upsample=True):
         super().__init__()
 
-        self.model_size = model_size  # d
-        self.num_channels = num_channels  # c
-        self.latent_di = latent_dim
+        num_channels = 1  # c
+        latent_dim = 100
+
+        self.model_size = model_size  # d        
         self.post_proc_filt_len = post_proc_filt_len
         self.verbose = verbose
         self.fc1 = nn.Linear(latent_dim, 256 * model_size)
@@ -137,7 +87,7 @@ class Generator(SerializableModule):
 
         for m in self.modules():
             if isinstance(m, nn.ConvTranspose1d) or isinstance(m, nn.Linear):
-                nn.init.kaiming_normal(m.weight.data)
+                nn.init.kaiming_normal_(m.weight.data)
 
     def forward(self, x):
         x = self.fc1(x).view(-1, 16 * self.model_size, 16)
@@ -217,11 +167,12 @@ class PhaseRemove(nn.Module):
 
 @SerializableModule.register_model('discriminator')
 class Discriminator(SerializableModule):
-    def __init__(self, model_size=64, num_channels=1, shift_factor=2, alpha=0.2, verbose=False):
+    def __init__(self, model_size=64, shift_factor=2, alpha=0.2, verbose=True):
         super().__init__()
 
+        num_channels = 1
+
         self.model_size = model_size  # d
-        self.num_channels = num_channels  # c
         self.shift_factor = shift_factor  # n
         self.alpha = alpha
         self.verbose = verbose
@@ -241,7 +192,7 @@ class Discriminator(SerializableModule):
 
         for m in self.modules():
             if isinstance(m, nn.Conv1d) or isinstance(m, nn.Linear):
-                nn.init.kaiming_normal(m.weight.data)
+                nn.init.kaiming_normal_(m.weight.data)
 
     def forward(self, x):
         x = torch.nn.functional.leaky_relu(self.conv1(x), negative_slope=self.alpha)
