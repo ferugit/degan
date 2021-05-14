@@ -61,7 +61,7 @@ class Transpose1dLayer(nn.Module):
 @SerializableModule.register_model('generator')
 class Generator(SerializableModule):
 
-    def __init__(self, model_size=64, post_proc_filt_len=512, verbose=True, upsample=True):
+    def __init__(self, model_size=64, post_proc_filt_len=512, verbose=False, upsample=True):
         super().__init__()
 
         num_channels = 1  # c
@@ -111,7 +111,10 @@ class Generator(SerializableModule):
         if self.verbose:
             print(x.shape)
 
-        output = torch.nn.functional.tanh(self.deconv_5(x))
+        output = torch.torch.tanh(self.deconv_5(x))
+
+        output = output.squeeze(1)
+
         return output
 
 
@@ -167,7 +170,7 @@ class PhaseRemove(nn.Module):
 
 @SerializableModule.register_model('discriminator')
 class Discriminator(SerializableModule):
-    def __init__(self, model_size=64, shift_factor=2, alpha=0.2, verbose=True):
+    def __init__(self, model_size=64, shift_factor=2, alpha=0.2, verbose=False):
         super().__init__()
 
         num_channels = 1
@@ -195,6 +198,10 @@ class Discriminator(SerializableModule):
                 nn.init.kaiming_normal_(m.weight.data)
 
     def forward(self, x):
+
+        # add channel dim
+        x = x.unsqueeze(1)
+
         x = torch.nn.functional.leaky_relu(self.conv1(x), negative_slope=self.alpha)
         if self.verbose:
             print(x.shape)
@@ -223,4 +230,6 @@ class Discriminator(SerializableModule):
         if self.verbose:
             print(x.shape)
 
-        return self.fc1(x)
+        x = self.fc1(x)
+
+        return x

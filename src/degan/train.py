@@ -4,6 +4,7 @@ import random
 import time
 
 from torchinfo import summary
+from utils import utils
 import torch
 
 
@@ -18,14 +19,18 @@ def right_predictions(out, label):
     return counter
 
 
-def train(models, train_loader, validation_loader, optimizer, criterion, device, 
-    epochs, batch_size, model_path, patience=10, net_class='rnn'):
+def train(models, train_loader, validation_loader, optimizers, criterion, device, 
+    epochs, batch_size, model_path, patience=10, critic_iters=5, lmbda=10.0, net_class='rnn'):
     """
     Trainer for wuw detection models
     """
-
+    # Models
     generator = models[0]
     discriminator = models[1]
+
+    # Optimizers
+    g_optimizer = optimizers[0]
+    d_optimizer = optimizers[1]
 
     # Metrics
     train_losses = []
@@ -39,11 +44,14 @@ def train(models, train_loader, validation_loader, optimizer, criterion, device,
     patience_counter = patience
 
     # Print model information
-    print(model)
+    print(generator)
+    print(discriminator)
 
     # Get trainable parameters
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print('Number of trainable parameters: ' + str(trainable_params))
+    g_trainable_params = sum(p.numel() for p in generator.parameters() if p.requires_grad)
+    d_trainable_params = sum(p.numel() for p in discriminator.parameters() if p.requires_grad)
+    print('Number of trainable parameters of the generator: ' + str(g_trainable_params))
+    print('Number of trainable parameters of the discriminator: ' + str(d_trainable_params))
 
     # For present intermediate information
     n_intermediate_steps = int(len(train_loader)/3)
@@ -58,6 +66,97 @@ def train(models, train_loader, validation_loader, optimizer, criterion, device,
         train_accuracy = 0.0
         counter = 0
 
+
+        one = torch.tensor(1, dtype=torch.float)
+        n_one = one * -1
+        one.to(device)
+        n_one.to(device)
+
+        generator.train()
+        discriminator.train()
+
+        for _, x in train_loader:
+            counter =+ 1
+
+            #############################
+            # (1) Train Discriminator
+            #############################
+
+            for lap in range(critic_iters):
+                discriminator.zero_grad()
+
+                # Get latent data:
+                noise = torch.Tensor(batch_size, 100).uniform_(-1, 1)
+                noise.to(device)
+
+                # 1. Compute loss contribution from real training data
+                d_real = discriminator(x)
+                d_real = d_real.mean()
+                d_real.backward(n_one)
+
+                # 2. Compute loss contribution from generated data, then backprop
+                fake = torch.autograd.Variable(generator(noise).data)
+                d_fake = discriminator(fake)
+                d_fake = d_fake.mean()
+                d_fake.backward(one)
+
+                # 3. Compute gradient penalty and backprop
+                gradient_penalty = utils.calc_gradient_penalty(
+                    discriminator,
+                    x.data,
+                    fake.data,
+                    batch_size,
+                    lmbda,
+                    device
+                    )
+                gradient_penalty.backward(one)
+
+                # Compute cost * Wassertein loss..
+                d_cost_train = d_fake - d_real + gradient_penalty
+                d_wass_train = d_real - d_fake
+
+                # Update gradient of discriminator.
+                d_optimizer.step()
+
+
+            #############################
+            # (3) Train Generator
+            #############################
+
+            generator.zero_grad()
+
+            # Noise
+            noise = torch.Tensor(batch_size, 100).uniform_(-1, 1)
+            noise.to(device)
+
+            fake = generator(noise)
+            G = discriminator(fake)
+            G = G.mean()
+
+            # Update gradients.
+            G.backward(n_one)
+            g_cost =- G
+
+            g_optimizer.step()
+
+
+             # Present intermediate results
+            if (counter%n_intermediate_steps == 0):
+                print("Epoch {}......Step: {}/{}....... Discriminator cost: {} | Discriminator wass: {} | Generator cost: {}".format(
+                    epoch,
+                    counter,
+                    d_cost_train,
+                    d_wass_train,
+                    g_cost
+                    ))
+
+    generator.save_entire_model(model_path + '_generator')
+    generator.save(model_path + '_generator')
+
+    discriminator.save_entire_model(model_path + '_discriminator')
+    discriminator.save(model_path + '_discriminator')
+
+        """
         model.train()
         for _, x, target in train_loader:
             counter += 1
@@ -162,6 +261,9 @@ def train(models, train_loader, validation_loader, optimizer, criterion, device,
     metrics['train_accuracy'] = train_accuracies
     metrics['validation_loss'] = validation_losses
     metrics['validation_accuracy'] = validation_accuracies
+
+    """
+    metrics = {}
 
     return metrics
 

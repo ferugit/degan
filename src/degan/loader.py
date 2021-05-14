@@ -5,7 +5,7 @@ import torch
 import numpy as np
 import pandas as pd
 
-import utils.audioutils as au
+import torchaudio
 
 
 def load_train_partitions(path, window_size=24000, fs=16000, augments=None):
@@ -41,7 +41,7 @@ class AudioDataset(torch.utils.data.Dataset):
     """
     Torch dataset for lazy load.
     """
-    def __init__(self, list_IDs, dataframe, window_size=16317, fs=16000, augments=None):
+    def __init__(self, list_IDs, dataframe, window_size=16317, fs=44100, augments=None):
         
         self.window_size = window_size
         self.fs = fs # Hz
@@ -50,10 +50,6 @@ class AudioDataset(torch.utils.data.Dataset):
         self.list_IDs = list_IDs
         self.dataframe = dataframe
         self.n_samples = len(list_IDs)
-
-        # Data augments
-        self.augments = [k for k,v in augments.items() if v == True]
-        self.white_noise = True if augments['white_noise'] else None
 
     def __len__(self):
         """
@@ -71,7 +67,6 @@ class AudioDataset(torch.utils.data.Dataset):
         repr_str = (
             "Number of samples: " + str(self.n_samples) + "\n"
             "Window size: " + str(self.window_size) + "\n"
-            "Augments: " + str(self.augments) + "\n"
             "Databases: " + str(np.unique(self.dataframe['Database'])) + "\n"
 
         )
@@ -95,9 +90,7 @@ class AudioDataset(torch.utils.data.Dataset):
         # Prepare audio
         audio = self.__prepare_audio(audio)
 
-        label = self.dataframe.set_index('Sample_ID').at[ID, 'Label']
-
-        return ID, audio, label
+        return ID, audio
 
     def __read_wav(self, filepath):
         """
@@ -107,9 +100,8 @@ class AudioDataset(torch.utils.data.Dataset):
         Returns:
             audio_signal: numpy array containing audio signal
         """
-        _, audio_signal = au.open_wavfile(filepath)
-        audio_signal = self.__normalize_audio(audio_signal)
-        return audio_signal
+        audio_signal, sr = torchaudio.load(filepath)
+        return audio_signal.data.numpy()[0]
     
     def __normalize_audio(self, audio, eps=0.001):
         """
@@ -125,27 +117,16 @@ class AudioDataset(torch.utils.data.Dataset):
         # Adapt sample to windows size
         audio_length = audio_signal.shape[0]
         if(audio_length >= self.window_size):
-            
-            # If audio is bigger than window size use random crop: random shift
-            left_bound = random.randint(0, audio_length - self.window_size)
-            right_bound = left_bound + self.window_size
-            audio_signal = audio_signal[left_bound:right_bound]
+            audio_signal = audio_signal[0:self.window_size]
             
         else:
             # If the audio is smaller than the window size: pad original signal with 0z
             padding = self.window_size - audio_length
-            bounds_sizes = np.random.multinomial(padding, np.ones(2)/2, size=1)[0]
             audio_signal = np.pad(
                 audio_signal,
-                (bounds_sizes[0], bounds_sizes[1]),
+                (0, padding),
                 'constant',
                 constant_values=(0, 0)
                 )
-
-        # Add white noise
-        if(self.white_noise):
-            noise = au.generate_white_noise(len(audio_signal))
-            noise = noise.astype(np.float32) / float(np.iinfo(noise.dtype).max)
-            audio_signal += noise
 
         return audio_signal

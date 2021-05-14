@@ -22,7 +22,7 @@ def main():
     # Model and experiment identification
     current_time = datetime.datetime.now()
     current_time = current_time.strftime("%Y-%m-%d_%H-%M-%S")
-    model_id = args.arc
+    model_id = 'degan'
     experiment_path = os.path.join(args.checkpoint, args.arc)
     check_path(args.checkpoint)
     check_path(experiment_path)
@@ -111,13 +111,15 @@ def main():
         batch_size,
         model_path,
         patience=args.patience,
+        critic_iters=args.critic_iters,
+        lmbda=args.lmbda,
         net_class='cnn'
         )
 
     # Save plot and metrics
     reporter.report('train_metrics', metrics)
-    figure_path = os.path.join(experiment_path,  'train_metrics.png')
-    train.save_train_metrics_plot(metrics, figure_path)
+    #figure_path = os.path.join(experiment_path,  'train_metrics.png')
+    #train.save_train_metrics_plot(metrics, figure_path)
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,30 @@
+{
+    "arguments": {
+        "seed": 0,
+        "cuda": true,
+        "partition_path": "/home/fer/Projects/degan/partitions/partition_random_split/",
+        "batch_size": 10,
+        "arc": "lenet",
+        "lr": 0.001,
+        "epochs": 100,
+        "patience": 10,
+        "weight_decay": 0.0,
+        "critic_iters": 5,
+        "lmbda": 10.0,
+        "checkpoint": "models/checkpoints",
+        "experiment_description": "frist experiment",
+        "sampling_rate": 44100,
+        "time_window": 0.37151927437641724
+    },
+    "experiment_date": "2021-05-14_18-06-16",
+    "generator_summary": {
+        "number_of_parameters": 19065345,
+        "number_of_operations": 18718723200,
+        "model_size_MB": 80.46
+    },
+    "discriminator_summary": {
+        "number_of_parameters": 17427969,
+        "number_of_operations": 843765184,
+        "model_size_MB": 73.83
+    }
+}

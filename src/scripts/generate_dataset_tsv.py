@@ -21,7 +21,7 @@ def main(args):
     torchaudio.set_audio_backend("sox_io")
 
     # Data path
-    wavs_path = os.path.join(args.src, 'impulse_responses_2')
+    wavs_path = os.path.join(args.src, 'impulse_responses')
 
     # Create dataframe list
     dataframe_list = []
@@ -45,7 +45,7 @@ def main(args):
             # TODO: get impulse response type
 
             # Write row on dataframe
-            dataframe_list.append([ sample_id, sample_path, audio_length, 'im'])
+            dataframe_list.append([ sample_id, sample_path, audio_length, 'studio_nord_bremen'])
 
 
     # Build audioset tsv file
