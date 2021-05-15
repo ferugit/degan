@@ -21,7 +21,7 @@ def main(args):
     torchaudio.set_audio_backend("sox_io")
 
     # Data path
-    wavs_path = os.path.join(args.src, 'impulse_responses')
+    wavs_path = os.path.join(args.src, 'impulse_responses_OK')
 
     # Create dataframe list
     dataframe_list = []
